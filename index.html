@@ -58,10 +58,10 @@ html, body { width: 100%; height: 100%; background: #050a14; font-family: 'Couri
 </style>
 </head>
 <body>
-
+ 
 <div id="screen-setup">
   <h1>Constellation</h1>
-
+ 
   <div class="row">
     <span class="lbl">Teams</span>
     <button class="nbtn" id="dec-t">&#8722;</button>
@@ -81,10 +81,10 @@ html, body { width: 100%; height: 100%; background: #050a14; font-family: 'Couri
     <span class="nval" id="stc-disp">1</span>
     <button class="nbtn" id="inc-st">+</button>
   </div>
-
+ 
   <button class="btn primary" id="start-btn">Launch Game</button>
 </div>
-
+ 
 <div id="edge-tooltip"></div>
 <div id="save-panel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
   <div style="font-family:'Courier New',monospace;font-size:11px;letter-spacing:3px;color:#8ab8d8;text-transform:uppercase;text-align:center;line-height:2;">
@@ -94,7 +94,7 @@ html, body { width: 100%; height: 100%; background: #050a14; font-family: 'Couri
   <textarea id="save-textarea" spellcheck="false" style="width:600px;max-width:90vw;height:320px;background:#0d1e35;border:1.5px solid #3a6090;border-radius:4px;color:#c8e0ff;font-family:'Courier New',monospace;font-size:11px;padding:12px;resize:none;letter-spacing:1px;"></textarea>
   <div style="display:flex;gap:12px;">
     <button id="copy-save-btn" style="background:#0d1e35;border:1.5px solid #5a9cdf;border-radius:4px;color:#fff;padding:10px 24px;font-family:'Courier New',monospace;font-size:11px;letter-spacing:3px;cursor:pointer;text-transform:uppercase;font-weight:700;">Copy All</button>
-
+    <button id="save-download-btn" style="background:#0d1e35;border:1.5px solid #00cc66;border-radius:4px;color:#00ff88;padding:10px 24px;font-family:'Courier New',monospace;font-size:11px;letter-spacing:3px;cursor:pointer;text-transform:uppercase;font-weight:700;">&#8681; Download</button>
     <button onclick="document.getElementById('save-panel').style.display='none';" style="background:#0d1e35;border:1.5px solid #3a6090;border-radius:4px;color:#8ab8d8;padding:10px 24px;font-family:'Courier New',monospace;font-size:11px;letter-spacing:3px;cursor:pointer;text-transform:uppercase;font-weight:700;">Close</button>
   </div>
 </div>
@@ -121,7 +121,7 @@ html, body { width: 100%; height: 100%; background: #050a14; font-family: 'Couri
   </div>
   <div id="canvas-wrap"><canvas id="gc"></canvas></div>
 </div>
-
+ 
 <div id="screen-score">
   <h2>Final Scores</h2>
   <table class="stbl">
@@ -130,20 +130,20 @@ html, body { width: 100%; height: 100%; background: #050a14; font-family: 'Couri
   </table>
   <button class="btn primary" id="play-again-btn">New Game</button>
 </div>
-
+ 
 <script>
 /* CYAN, MAGENTA, LIME, GOLD */
 var COLORS     = ['#00ffff', '#ff00ff', '#00ff00', '#ffff00'];
 var COLORS_BG  = ['#003a44', '#3a0033', '#003300', '#333300']; /* dark tint for body fill */
 var COLORS_TXT = ['#000000', '#000000', '#000000', '#000000']; /* label text on colored bg */
-
+ 
 var NUMS = '123456789';
 var LETS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-
+ 
 var R_STAR    = 16;
 var R_CLUSTER = 16;
 var R_HQ_RING = 7;
-
+ 
 var teamCount = 2;
 var starCount = 20;
 var teamNames = ['Cyan', 'Magenta', 'Lime', 'Gold'];
@@ -158,7 +158,7 @@ var edgeAnims = [], lineAnims = [], traceAnims = [], supernovaAnims = [];
 var hqAngle = 0;
 var needsRedraw = false;
 var rafId = null, lastTime = 0;
-
+ 
 var setupEl  = document.getElementById('screen-setup');
 var gameEl   = document.getElementById('screen-game');
 var scoreEl  = document.getElementById('screen-score');
@@ -168,11 +168,11 @@ var hudEl    = document.getElementById('hud');
 var stealBtn = document.getElementById('steal-btn');
 var stextEl  = document.getElementById('stext');
 var tdotEl   = document.getElementById('tdot');
-
+ 
 function ptDist(a, b) { var dx = a.x-b.x, dy = a.y-b.y; return Math.sqrt(dx*dx+dy*dy); }
 function makeLabel(idx) { return NUMS[idx % NUMS.length] + LETS[Math.floor(idx / NUMS.length) % LETS.length]; }
 function alphaHex(hex, a) { var v = Math.max(0,Math.min(255,Math.round(a*255))), h = v.toString(16); return hex+(h.length<2?'0'+h:h); }
-
+ 
 /* ── SETUP ─────────────────────────────────────────────── */
 function renderInputs() {
   var w = document.getElementById('team-inputs'); w.innerHTML = '';
@@ -202,7 +202,7 @@ document.getElementById('inc-s').onclick = function(){ if(starCount<100){ starCo
 document.getElementById('dec-st').onclick = function(){ if(stealsPerTeam>0){ stealsPerTeam--; document.getElementById('stc-disp').textContent=String(stealsPerTeam); } };
 document.getElementById('inc-st').onclick = function(){ if(stealsPerTeam<5){ stealsPerTeam++; document.getElementById('stc-disp').textContent=String(stealsPerTeam); } };
 renderInputs();
-
+ 
 /* ── GRAPH GENERATION ───────────────────────────────────── */
 function generateGraph() {
   nodes = [];
@@ -245,7 +245,7 @@ function generateGraph() {
       placed++;
     }
   }
-
+ 
   edges = []; var edgeSet = {};
   function addEdge(a,b) {
     var key = Math.min(a,b)+'-'+Math.max(a,b);
@@ -288,7 +288,7 @@ function generateGraph() {
     (function(idx,delay){ setTimeout(function(){ edgeAnims.push({edgeIdx:idx,progress:0}); needsRedraw=true; }, delay); }(i, 15+i*12));
   }
 }
-
+ 
 function initTeams() {
   teams=[]; var i;
   for (i=0;i<teamCount;i++) {
@@ -296,15 +296,15 @@ function initTeams() {
   }
   currentTeam=0; gamePhase='hq'; stealMode=false; lineAnims=[]; traceAnims=[]; supernovaAnims=[];
 }
-
+ 
 function resizeCanvas() {
   var wrap=document.getElementById('canvas-wrap');
   W=wrap.clientWidth; H=wrap.clientHeight;
   canvas.width=W; canvas.height=H;
 }
-
+ 
 /* ── SCORING ────────────────────────────────────────────── */
-
+ 
 /* Longest non-retracing path from HQ through owned nodes via owned edges (DFS) */
 /* HQ-to-HQ score: longest non-overlapping path connecting this team's own two HQs */
 function hqToHqScore(teamIdx) {
@@ -342,14 +342,14 @@ function hqToHqScore(teamIdx) {
   dfs2(team.hq, 0);
   return best;
 }
-
+ 
 function longestPathFromHQ(teamIdx) {
   var team = teams[teamIdx];
   if (team.hq < 0 || team.nodes.length < 2) return 0;
   var ownedSet = {};
   var i;
   for (i=0;i<team.nodes.length;i++) ownedSet[team.nodes[i]]=true;
-
+ 
   /* Build adjacency list of owned edges */
   var adj = {}, e, ed;
   for (i=0;i<team.nodes.length;i++) adj[team.nodes[i]]=[];
@@ -360,10 +360,10 @@ function longestPathFromHQ(teamIdx) {
       adj[ed.b].push({to:ed.a,d:ed.d});
     }
   }
-
+ 
   var best = 0;
   var visited = {};
-
+ 
   function dfs(node, dist) {
     if (dist > best) best = dist;
     var neighbors = adj[node], k, nb;
@@ -376,12 +376,12 @@ function longestPathFromHQ(teamIdx) {
       }
     }
   }
-
+ 
   visited[team.hq] = true;
   dfs(team.hq, 0);
   return best;
 }
-
+ 
 function calcScores() {
   var t, e, n, team, owned, ed, D, L, H2;
   for (t=0;t<teams.length;t++) {
@@ -395,7 +395,7 @@ function calcScores() {
     team.score=D+L+H2;
   }
 }
-
+ 
 /* ── HUD ────────────────────────────────────────────────── */
 function renderHUD() {
   hudEl.innerHTML='';
@@ -407,7 +407,9 @@ function renderHUD() {
     nameDiv=document.createElement('div');   nameDiv.className='tname';  nameDiv.style.color=team.color; nameDiv.textContent=team.name+(team.isComputer?' ■CPU':'');
     scoreDiv=document.createElement('div');  scoreDiv.className='tscore'; scoreDiv.style.color=team.color; scoreDiv.textContent=String(team.score);
     partsDiv=document.createElement('div');  partsDiv.className='tparts'; partsDiv.textContent='E:'+team._d+'  P:'+team._l+'  HQ:'+team._c;
-    stealDiv=document.createElement('div');  stealDiv.className='tsteal'; stealDiv.style.color=team.stealsLeft<=0?'#2a3a4a':team.color; stealDiv.textContent=team.stealsLeft<=0?'steal used':'\u25c6 steal ready';
+    stealDiv=document.createElement('div');  stealDiv.className='tsteal'; stealDiv.style.color=team.stealsLeft<=0?'#2a3a4a':team.color;
+    if(team.stealsLeft<=0){ stealDiv.textContent='steals gone'; }
+    else { var dm=''; for(var sd=0;sd<team.stealsLeft;sd++) dm+='◆'; stealDiv.textContent=dm+' '+team.stealsLeft+' steal'+(team.stealsLeft===1?'':'s')+' ready'; }
     div.appendChild(nameDiv); div.appendChild(scoreDiv); div.appendChild(partsDiv); div.appendChild(stealDiv);
     hudEl.appendChild(div);
   }
@@ -417,14 +419,14 @@ function renderHUD() {
   stealBtn.style.color        = tc;
   stealBtn.style.background   = 'transparent';
 }
-
+ 
 /* ── DRAW HELPERS ───────────────────────────────────────── */
 function drawEdgePartial(na, nb, progress, strokeColor, lineW) {
   var tx=na.x+(nb.x-na.x)*progress, ty=na.y+(nb.y-na.y)*progress;
   ctx.beginPath(); ctx.moveTo(na.x,na.y); ctx.lineTo(tx,ty);
   ctx.strokeStyle=strokeColor; ctx.lineWidth=lineW; ctx.setLineDash([]); ctx.stroke();
 }
-
+ 
 function drawDistLabel(na, nb, distVal, color, alpha) {
   /* Offset label perpendicular to the edge so it never sits on top of the line */
   var mx=(na.x+nb.x)/2, my=(na.y+nb.y)/2;
@@ -452,14 +454,14 @@ function drawDistLabel(na, nb, distVal, color, alpha) {
   ctx.fillStyle=color; ctx.fillText(txt,lx,ly);
   ctx.restore();
 }
-
+ 
 /* ── DRAW NODE ──────────────────────────────────────────── */
 function drawNode(n, i, highlight) {
   var owned=n.owner>=0, team=owned?teams[n.owner]:null;
   var isHQ=owned&&(teams[n.owner].hq===i||teams[n.owner].hq2===i);
   var r=n.isCluster?R_CLUSTER:R_STAR;
   var pulse=n.claimPulse;
-
+ 
   /* Claim pulse */
   if (pulse>0) {
     ctx.save(); ctx.beginPath(); ctx.arc(n.x,n.y,r+pulse*40,0,Math.PI*2);
@@ -481,7 +483,7 @@ function drawNode(n, i, highlight) {
   ctx.strokeStyle = n.locked?'#ff7733':(owned?team.color:(highlight?'#6ab0d8':'#2e5a7a'));
   ctx.lineWidth   = owned ? 2.5 : 2;
   ctx.stroke();
-
+ 
   /* HQ rotating dashed rings */
   if (isHQ) {
     ctx.save();
@@ -500,7 +502,7 @@ function drawNode(n, i, highlight) {
     ctx.setLineDash([]);
     ctx.restore();
   }
-
+ 
   /* Label — black on owned (team color bg), light on unowned */
   ctx.font='bold 13px Courier New';
   ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -508,7 +510,7 @@ function drawNode(n, i, highlight) {
   ctx.fillStyle = owned ? '#ffffff' : (highlight?'#ffffff':'#d0e8ff');
   ctx.fillText(n.label,n.x,n.y);
   ctx.shadowBlur=0;
-
+ 
   if (isHQ) {
     ctx.font='bold 10px Courier New'; ctx.fillStyle='#ffffff';
     ctx.shadowColor='#000'; ctx.shadowBlur=5;
@@ -523,7 +525,7 @@ function drawNode(n, i, highlight) {
   }
   ctx.restore();
 }
-
+ 
 /* ── MAIN DRAW ──────────────────────────────────────────── */
 function draw() {
   if (!nodes) return;
@@ -535,13 +537,13 @@ function draw() {
     ctx.fillStyle='rgba(160,190,255,'+(0.10+(i%6)*0.06)+')'; ctx.fill();
   }
   calcScores();
-
+ 
   var e, ed, na, nb, aO, bO, connected, prog, ownerIdx;
   for (e=0;e<edges.length;e++) {
     ed=edges[e]; na=nodes[ed.a]; nb=nodes[ed.b];
     aO=na.owner; bO=nb.owner; connected=aO>=0&&aO===bO;
     prog=ed.drawProgress; if(prog<=0) continue;
-
+ 
     if (ed.locked) {
       drawEdgePartial(na,nb,prog,alphaHex('#ff7733',0.85),5);
     } else if (connected) {
@@ -554,7 +556,7 @@ function draw() {
       ctx.setLineDash([]);
       ctx.globalAlpha=prog; ctx.stroke(); ctx.globalAlpha=1; ctx.restore();
     }
-
+ 
     if (prog>0.5) {
       if (connected||ed.locked) {
         ownerIdx=aO>=0?aO:bO;
@@ -564,7 +566,7 @@ function draw() {
       }
     }
   }
-
+ 
   /* Highlight hovered edge */
   if(hoveredEdge>=0 && hoveredEdge<edges.length){
     var he=edges[hoveredEdge];
@@ -574,7 +576,7 @@ function draw() {
     ctx.strokeStyle='rgba(255,255,255,0.55)'; ctx.lineWidth=6; ctx.stroke();
     ctx.restore();
   }
-
+ 
   /* Line trace animations */
   for (i=lineAnims.length-1;i>=0;i--) {
     var la=lineAnims[i]; if(la.progress>=1){ lineAnims.splice(i,1); continue; }
@@ -588,7 +590,7 @@ function draw() {
     ctx.fillStyle=alphaHex(la.color,0.95*(1-lp*0.3)); ctx.fill();
     ctx.restore();
   }
-
+ 
   /* Trace animations for current team's available edges — ping-pong arrows */
   for (i=traceAnims.length-1;i>=0;i--) {
     var ta=traceAnims[i];
@@ -620,7 +622,7 @@ function draw() {
     ctx.fillStyle=ta.color; ctx.fill();
     ctx.restore();
   }
-
+ 
   /* Supernova animations */
   for (i=supernovaAnims.length-1;i>=0;i--) {
     var sn=supernovaAnims[i];
@@ -657,11 +659,11 @@ function draw() {
       }
     }
   }
-
+ 
   for (i=0;i<nodes.length;i++) drawNode(nodes[i],i,i===hoveredNode);
   renderHUD(); updateStatus();
 }
-
+ 
 /* ── ANIM LOOP ──────────────────────────────────────────── */
 function animLoop(ts) {
   var dt=Math.min((ts-lastTime)/1000,0.05); lastTime=ts;
@@ -696,7 +698,7 @@ function animLoop(ts) {
   if(dirty||needsRedraw){ needsRedraw=false; draw(); }
   rafId=requestAnimationFrame(animLoop);
 }
-
+ 
 /* ── STATUS ─────────────────────────────────────────────── */
 function updateStatus() {
   var team=teams[currentTeam], left=0, i, tc=team.color;
@@ -714,15 +716,15 @@ function updateStatus() {
     stealBtn.textContent='Use Steal'; stealBtn.disabled=team.stealsLeft<=0;
   }
 }
-
+ 
 stealBtn.addEventListener('click', function(){
   if(stealMode){ stealMode=false; needsRedraw=true; return; }
   if(teams[currentTeam].stealsLeft>0&&gamePhase!=='hq'){ stealMode=true; needsRedraw=true; }
 });
-
+ 
 /* ── CLUSTER LOCK ───────────────────────────────────────── */
 function checkLockClusters(ownerIdx) { /* clusters removed */ }
-
+ 
 /* Build trace animations for edges reachable by current team */
 function rebuildTraceAnims() {
   traceAnims = [];
@@ -763,7 +765,7 @@ function rebuildTraceAnims() {
     });
   }
 }
-
+ 
 /* Supernova when a star is stolen */
 function spawnSupernova(x, y, stolenColor) {
   var particles=[], count=28, i, angle, speed2, r2;
@@ -782,7 +784,7 @@ function spawnSupernova(x, y, stolenColor) {
   }
   supernovaAnims.push({x:x,y:y,particles:particles,progress:0,speed:180,color:stolenColor});
 }
-
+ 
 /* ── CLAIM ──────────────────────────────────────────────── */
 function spawnClaimAnims(ni, teamIdx) {
   var n=nodes[ni], color=teams[teamIdx].color;
@@ -798,18 +800,18 @@ function spawnClaimAnims(ni, teamIdx) {
     }
   }
 }
-
+ 
 function claimNode(ni, byTeam) {
   nodes[ni].owner=byTeam; spawnClaimAnims(ni,byTeam);
   teams[byTeam].nodes.push(ni); checkLockClusters(byTeam);
 }
 function advanceTurn(){ currentTeam=(currentTeam+1)%teamCount; stealMode=false; rebuildTraceAnims(); scheduleCpuMove(); }
-
+ 
 /* ── CPU AI ─────────────────────────────────────────────── */
 function cpuPickNode() {
   var team=teams[currentTeam];
   var ownedSet={}, i, e, ed, ni, best, bestScore, score, n, nbOwned, conn;
-
+ 
   if (gamePhase==='hq') {
     var ownHQ1=teams[currentTeam].hq, ownHQ2=teams[currentTeam].hq2;
     best=-1; bestScore=-Infinity;
@@ -831,10 +833,10 @@ function cpuPickNode() {
     }
     return best;
   }
-
+ 
   /* Build owned set */
   for(i=0;i<team.nodes.length;i++) ownedSet[team.nodes[i]]=true;
-
+ 
   best=-1; bestScore=-Infinity;
   for(ni=0;ni<nodes.length;ni++){
     if(nodes[ni].owner>=0) continue;
@@ -869,7 +871,7 @@ function cpuPickNode() {
   }
   return best;
 }
-
+ 
 function scheduleCpuMove() {
   if(!teams||currentTeam>=teams.length) return;
   if(!teams[currentTeam].isComputer) return;
@@ -889,21 +891,21 @@ function scheduleCpuMove() {
     }
   }, 600 + Math.random()*400);
 }
-
+ 
 /* ── INPUT ──────────────────────────────────────────────── */
 function nodeAtPoint(mx,my) {
   var best=-1,bestD=36,i,d;
   for(i=0;i<nodes.length;i++){ d=ptDist(nodes[i],{x:mx,y:my}); if(d<bestD){best=i;bestD=d;} }
   return best;
 }
-
+ 
 function distToSegment(px,py,ax,ay,bx,by) {
   var dx=bx-ax, dy=by-ay, lenSq=dx*dx+dy*dy;
   if(lenSq===0) return ptDist({x:px,y:py},{x:ax,y:ay});
   var t=Math.max(0,Math.min(1,((px-ax)*dx+(py-ay)*dy)/lenSq));
   return Math.sqrt((px-(ax+t*dx))*(px-(ax+t*dx))+(py-(ay+t*dy))*(py-(ay+t*dy)));
 }
-
+ 
 function edgeAtPoint(mx,my) {
   var best=-1,bestD=12,i,e,d,na,nb;
   /* Only detect edges when no node is close */
@@ -916,7 +918,7 @@ function edgeAtPoint(mx,my) {
   }
   return best;
 }
-
+ 
 var tooltipEl = document.getElementById('edge-tooltip');
 function showEdgeTooltip(ei, screenX, screenY) {
   if(ei<0){ tooltipEl.style.display='none'; return; }
@@ -932,7 +934,7 @@ function showEdgeTooltip(ei, screenX, screenY) {
   tooltipEl.style.borderColor=color+'88';
   tooltipEl.textContent=na.label+' — '+nb.label+' : '+ed.d;
 }
-
+ 
 canvas.addEventListener('mousemove', function(e){
   var r=canvas.getBoundingClientRect();
   var mx=(e.clientX-r.left)*(W/r.width), my=(e.clientY-r.top)*(H/r.height);
@@ -946,14 +948,14 @@ canvas.addEventListener('mousemove', function(e){
 canvas.addEventListener('mouseleave', function(){
   hoveredEdge=-1; tooltipEl.style.display='none'; needsRedraw=true;
 });
-
+ 
 canvas.addEventListener('click', function(e){
   var r=canvas.getBoundingClientRect();
   var mx=(e.clientX-r.left)*(W/r.width), my=(e.clientY-r.top)*(H/r.height);
   var ni=nodeAtPoint(mx,my); if(ni<0) return;
   var node=nodes[ni], team=teams[currentTeam];
   var prev, newNodes, i, allHQ;
-
+ 
   if (stealMode) {
     if(node.owner<0||node.owner===currentTeam||node.locked||node.wasStolen) return;
     if(teams[node.owner].hq===ni||teams[node.owner].hq2===ni) return; /* cannot steal HQ */
@@ -964,7 +966,7 @@ canvas.addEventListener('click', function(e){
     node.wasStolen=true;
     node.owner=-1; claimNode(ni,currentTeam); team.stealsLeft=Math.max(0,team.stealsLeft-1); advanceTurn(); needsRedraw=true; checkAllClaimed(); return;
   }
-
+ 
   if (gamePhase==='hq') {
     if(node.owner>=0) return;
     /* First HQ pick for this team or second */
@@ -975,16 +977,16 @@ canvas.addEventListener('click', function(e){
     allHQ=true; for(i=0;i<teams.length;i++){ if(teams[i].hq<0||teams[i].hq2<0){allHQ=false;break;} }
     if(allHQ) gamePhase='pick'; needsRedraw=true; return;
   }
-
+ 
   if(node.owner>=0) return;
   claimNode(ni,currentTeam); advanceTurn(); needsRedraw=true; checkAllClaimed();
 });
-
+ 
 function checkAllClaimed() {
   var i; for(i=0;i<nodes.length;i++){ if(nodes[i].owner<0) return; }
   endGame();
 }
-
+ 
 /* ── SAVE / LOAD ────────────────────────────────────────── */
 function buildSaveState() {
   return {
@@ -997,14 +999,14 @@ function buildSaveState() {
     teams: teams.map(function(t){ return {name:t.name,color:t.color,bgColor:t.bgColor,hq:t.hq,hq2:t.hq2,nodes:t.nodes.slice(),score:t.score,_d:t._d,_l:t._l,_c:t._c,stealsLeft:t.stealsLeft,isComputer:t.isComputer}; })
   };
 }
-
+ 
 function saveGame() {
   var json = JSON.stringify(buildSaveState(), null, 2);
   document.getElementById('save-textarea').value = json;
   document.getElementById('save-panel').style.display = 'flex';
   setTimeout(function(){ try{ document.getElementById('save-textarea').select(); document.execCommand('copy'); }catch(e){} }, 50);
 }
-
+ 
 function loadGame(jsonStr) {
   var state;
   try { state=JSON.parse(jsonStr); } catch(err){ alert('Invalid save file.'); return; }
@@ -1039,7 +1041,7 @@ function loadGame(jsonStr) {
   if(!rafId) rafId=requestAnimationFrame(animLoop);
   scheduleCpuMove();
 }
-
+ 
 document.getElementById('save-btn').addEventListener('click', function(){
   if(nodes&&nodes.length>0) saveGame();
 });
@@ -1055,14 +1057,26 @@ document.getElementById('copy-save-btn').addEventListener('click', function(){
   var btn = this;
   setTimeout(function(){ btn.textContent = 'Copy All'; }, 2000);
 });
-
+ 
+document.getElementById('save-download-btn').addEventListener('click', function(){
+  var json = document.getElementById('save-textarea').value;
+  if(!json) return;
+  var a = document.createElement('a');
+  a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(json);
+  a.download = 'constellation-save.json';
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+});
+ 
 document.getElementById('load-confirm-btn').addEventListener('click', function(){
   var txt=document.getElementById('load-textarea').value.trim();
   if(txt){ loadGame(txt); document.getElementById('load-panel').style.display='none'; }
 });
-
-
-
+ 
+ 
+ 
 /* ── END GAME ───────────────────────────────────────────── */
 function endGame() {
   var sorted, t, i, c, tr, td, cells;
@@ -1083,7 +1097,7 @@ function endGame() {
     tbody.appendChild(tr);
   }
 }
-
+ 
 /* ── LAUNCH ─────────────────────────────────────────────── */
 document.getElementById('start-btn').addEventListener('click', function(){
   setupEl.style.display='none';
@@ -1099,11 +1113,11 @@ document.getElementById('start-btn').addEventListener('click', function(){
     setTimeout(scheduleCpuMove,800);
   },50);
 });
-
+ 
 document.getElementById('play-again-btn').addEventListener('click', function(){
   scoreEl.style.display='none'; setupEl.style.display='flex'; renderInputs();
 });
-
+ 
 window.addEventListener('resize', function(){
   if(gameEl.style.display!=='none'&&nodes){ resizeCanvas(); needsRedraw=true; }
 });
