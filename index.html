@@ -490,22 +490,19 @@ function drawNode(n, i, highlight) {
   ctx.lineWidth   = owned ? 2.5 : 2;
   ctx.stroke();
 
-  /* HQ rotating dashed rings */
+  /* HQ pulsing team-color ring */
   if (isHQ) {
+    /* pulse: hqAngle used as time, sin gives 0..1 oscillation */
+    var pulse = 0.5 + 0.5 * Math.sin(hqAngle * 2.5);
+    var ringR = r + R_HQ_RING + pulse * 6;
+    var ringAlpha = 0.45 + 0.55 * pulse;
+    var ringWidth = 1.5 + pulse * 2.5;
     ctx.save();
-    ctx.translate(n.x, n.y);
-    ctx.rotate(hqAngle);
-    /* Inner rotating dashed ring */
-    ctx.beginPath(); ctx.arc(0, 0, r+R_HQ_RING, 0, Math.PI*2);
-    ctx.strokeStyle='#ffffff'; ctx.lineWidth=2.5;
-    ctx.setLineDash([8,5]); ctx.lineDashOffset=0; ctx.stroke();
+    ctx.beginPath(); ctx.arc(n.x, n.y, ringR, 0, Math.PI*2);
+    ctx.strokeStyle = alphaHex(team.color, ringAlpha);
+    ctx.lineWidth = ringWidth;
     ctx.setLineDash([]);
-    /* Outer counter-rotating faint ring */
-    ctx.rotate(-hqAngle*2);
-    ctx.beginPath(); ctx.arc(0, 0, r+R_HQ_RING+6, 0, Math.PI*2);
-    ctx.strokeStyle=alphaHex('#ffffff',0.35); ctx.lineWidth=1.5;
-    ctx.setLineDash([4,8]); ctx.stroke();
-    ctx.setLineDash([]);
+    ctx.stroke();
     ctx.restore();
   }
 
@@ -597,35 +594,71 @@ function draw() {
     ctx.restore();
   }
 
-  /* Trace animations for current team's available edges — ping-pong arrows */
+  /* Trace animations — glowing worm travels edge, hugs star, returns */
   for (i=traceAnims.length-1;i>=0;i--) {
     var ta=traceAnims[i];
-    /* ping-pong: 0->1 forward, 1->2 backward, then reset */
-    var tp=ta.progress>=1?2-ta.progress:ta.progress; /* 0..1 normalized position */
-    var tex=ta.ox+(ta.tx-ta.ox)*tp, tey=ta.oy+(ta.ty-ta.oy)*tp;
-    /* alpha: fade in from owned node, fade out near unowned */
-    var talpha=0.3+0.65*Math.sin(tp*Math.PI);
-    /* Arrow direction: forward (0->1) or reverse (1->2) */
-    var goingFwd=(ta.progress<1);
-    var adx=goingFwd?(ta.tx-ta.ox):(ta.ox-ta.tx);
-    var ady=goingFwd?(ta.ty-ta.oy):(ta.oy-ta.ty);
-    var alen=Math.sqrt(adx*adx+ady*ady)||1;
-    adx/=alen; ady/=alen;
-    /* Arrow head size */
-    var ahs=10, ahw=5;
-    var ahx=tex, ahy=tey;
-    var al1x=ahx-adx*ahs+(-ady)*ahw, al1y=ahy-ady*ahs+adx*ahw;
-    var al2x=ahx-adx*ahs-(-ady)*ahw, al2y=ahy-ady*ahs-adx*ahw;
+    /*
+      TOTAL cycle: 0..1 go, 1..1+OF orbit, 1+OF..2+OF return
+      We draw a worm (series of segments) that has a HEAD and a TAIL,
+      both moving along the same path with TAIL lagging behind HEAD.
+    */
+    var OF = 0.30;         /* orbit fraction of cycle */
+    var TOTAL_C = 2 + OF;
+    var WORM = 0.18;       /* worm length as fraction of TOTAL_C */
+    var R_ORB = 22;        /* orbit radius around target star */
+    var SEGS = 18;         /* number of points sampled along worm */
+
+    /* Map a 0..TOTAL_C value to an (x,y) position along the full path */
+    function pathPos(t) {
+      var tc = ((t % TOTAL_C) + TOTAL_C) % TOTAL_C;
+      var px, py;
+      if (tc <= 1) {
+        /* going forward along edge */
+        px = ta.ox + (ta.tx - ta.ox) * tc;
+        py = ta.oy + (ta.ty - ta.oy) * tc;
+      } else if (tc <= 1 + OF) {
+        /* orbiting target */
+        var ot = (tc - 1) / OF;
+        var ang = -Math.PI * 0.5 + ot * Math.PI * 2;
+        px = ta.tx + Math.cos(ang) * R_ORB;
+        py = ta.ty + Math.sin(ang) * R_ORB;
+      } else {
+        /* returning along edge */
+        var rt = (tc - 1 - OF);
+        px = ta.tx + (ta.ox - ta.tx) * rt;
+        py = ta.ty + (ta.oy - ta.ty) * rt;
+      }
+      return {x: px, y: py};
+    }
+
+    var headT = ta.progress;
     ctx.save();
-    ctx.globalAlpha=talpha;
-    /* Shaft: short line behind arrowhead */
-    var shaftLen=Math.min(tp*alen*0.85,60);
-    var shx=tex-adx*shaftLen, shy=tey-ady*shaftLen;
-    ctx.beginPath(); ctx.moveTo(shx,shy); ctx.lineTo(tex,tey);
-    ctx.strokeStyle=ta.color; ctx.lineWidth=2.5; ctx.stroke();
-    /* Arrowhead filled triangle */
-    ctx.beginPath(); ctx.moveTo(ahx,ahy); ctx.lineTo(al1x,al1y); ctx.lineTo(al2x,al2y); ctx.closePath();
-    ctx.fillStyle=ta.color; ctx.fill();
+
+    /* Draw worm as a series of connected segments with fading alpha & width */
+    for (var seg = 0; seg < SEGS - 1; seg++) {
+      var t0 = headT - WORM * (seg / SEGS);
+      var t1 = headT - WORM * ((seg + 1) / SEGS);
+      var p0 = pathPos(t0);
+      var p1 = pathPos(t1);
+      var frac = 1 - seg / SEGS; /* 1 at head, 0 at tail */
+      ctx.globalAlpha = frac * 0.85;
+      ctx.strokeStyle = ta.color;
+      ctx.lineWidth = 1.5 + frac * 3;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      ctx.lineTo(p1.x, p1.y);
+      ctx.stroke();
+    }
+
+    /* Bright head dot */
+    var head = pathPos(headT);
+    ctx.globalAlpha = 0.95;
+    ctx.beginPath();
+    ctx.arc(head.x, head.y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = ta.color;
+    ctx.fill();
+
     ctx.restore();
   }
 
@@ -689,7 +722,7 @@ function animLoop(ts) {
   if(traceAnims.length>0){
     for(i=0;i<traceAnims.length;i++){
       traceAnims[i].progress+=dt*traceAnims[i].speed;
-      if(traceAnims[i].progress>=2) traceAnims[i].progress-=2;
+      var TOTAL_CYCLE=2.28; if(traceAnims[i].progress>=TOTAL_CYCLE) traceAnims[i].progress-=TOTAL_CYCLE;
     }
     dirty=true;
   }
