@@ -7,9 +7,9 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width: 100%; height: 100%; background: #050a14; font-family: 'Courier New', monospace; color: #e0eaff; overflow: hidden; }
-#screen-setup, #screen-game, #screen-score { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+#screen-setup, #screen-game { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 #screen-game { display: none; align-items: stretch; justify-content: flex-start; }
-#screen-score { display: none; }
+
 #screen-setup { gap: 20px; padding: 40px; }
 #screen-setup h1 { font-size: 56px; letter-spacing: 14px; color: transparent; font-weight: 400; text-transform: uppercase; font-family: 'Gill Sans', 'Optima', 'Futura', 'Century Gothic', sans-serif; -webkit-text-stroke: 1.5px #ffffff; text-stroke: 1.5px #ffffff; filter: drop-shadow(0 0 18px #00ffff88); }
 #screen-setup p { font-size: 11px; letter-spacing: 3px; color: #8ab8d8; text-align: center; max-width: 480px; line-height: 2.2; text-transform: uppercase; font-weight: 600; }
@@ -46,11 +46,11 @@ html, body { width: 100%; height: 100%; background: #050a14; font-family: 'Couri
 .tdot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
 #steal-btn { border: 2px solid; border-radius: 4px; padding: 8px 20px; font-family: 'Courier New', monospace; font-size: 11px; letter-spacing: 3px; cursor: pointer; text-transform: uppercase; font-weight: 700; transition: opacity 0.2s; }
 #steal-btn:disabled { opacity: 0.25; cursor: default; }
-#screen-score { gap: 24px; padding: 40px; }
+
 #edge-tooltip { position: fixed; pointer-events: none; display: none; background: #050e1eee; border: 1.5px solid #3a6090; border-radius: 6px; padding: 7px 14px; font-family: 'Courier New', monospace; font-size: 13px; font-weight: 700; color: #fff; letter-spacing: 2px; z-index: 100; white-space: nowrap; }
 .io-btn { background: #0d1e35; border: 1.5px solid #2a4060; border-radius: 4px; color: #8ab8d8; padding: 6px 14px; font-family: 'Courier New', monospace; font-size: 10px; letter-spacing: 2px; cursor: pointer; text-transform: uppercase; font-weight: 600; transition: all 0.2s; }
 .io-btn:hover { border-color: #5a9cdf; color: #fff; }
-#screen-score h2 { font-size: 28px; letter-spacing: 8px; color: #fff; font-weight: 700; text-transform: uppercase; }
+
 .stbl { width: 100%; max-width: 640px; border-collapse: collapse; }
 .stbl td, .stbl th { padding: 10px 14px; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; border-bottom: 1px solid #1a3050; font-weight: 600; }
 .stbl th { color: #5a8090; font-weight: 700; }
@@ -122,19 +122,28 @@ html, body { width: 100%; height: 100%; background: #050a14; font-family: 'Couri
     <div style="display:flex;gap:8px;align-items:center;">
       <button class="io-btn" id="save-btn">&#8681; Save</button>
       <button class="io-btn" id="load-btn">&#8679; Load</button>
+      <button class="io-btn" id="show-score-btn" style="display:none;border-color:#ffd000;color:#ffd000;">&#9733; Scores</button>
       <button id="steal-btn">Use Steal</button>
     </div>
   </div>
   <div id="canvas-wrap"><canvas id="gc"></canvas></div>
 </div>
 
-<div id="screen-score">
-  <h2>Final Scores</h2>
-  <table class="stbl">
-    <thead><tr><th>Team</th><th>Edge Dist</th><th>HQ Path</th><th>HQ Link</th><th>Total</th></tr></thead>
-    <tbody id="score-rows"></tbody>
-  </table>
-  <button class="btn primary" id="play-again-btn">New Game</button>
+<div id="screen-score" style="display:none;position:fixed;inset:0;z-index:300;align-items:center;justify-content:center;background:rgba(0,0,0,0.72);">
+  <div style="background:#070f1e;border:1.5px solid #2a4060;border-radius:12px;padding:36px 44px;display:flex;flex-direction:column;align-items:center;gap:20px;min-width:480px;max-width:90vw;box-shadow:0 0 60px #000a;">
+    <div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:20px;">
+      <h2 style="font-size:22px;letter-spacing:8px;color:#fff;font-weight:700;text-transform:uppercase;margin:0;">Final Scores</h2>
+      <button id="score-close-btn" title="Close and review board" style="background:transparent;border:1.5px solid #3a6090;border-radius:4px;color:#8ab8d8;width:32px;height:32px;font-size:18px;cursor:pointer;line-height:1;font-family:'Courier New',monospace;">&#x2715;</button>
+    </div>
+    <table class="stbl" style="width:100%;">
+      <thead><tr><th>Team</th><th>Total Edges</th><th>HQ Link</th><th>Total Score</th></tr></thead>
+      <tbody id="score-rows"></tbody>
+    </table>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
+      <button class="btn primary" id="play-again-btn">New Game</button>
+      <button class="btn" id="score-close-btn2">&#x21A9; Review Board</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -389,16 +398,15 @@ function longestPathFromHQ(teamIdx) {
 }
 
 function calcScores() {
-  var t, e, n, team, owned, ed, D, L, H2;
+  var t, e, n, team, owned, ed, D, H2;
   for (t=0;t<teams.length;t++) {
     team=teams[t]; owned={};
     for (n=0;n<team.nodes.length;n++) owned[team.nodes[n]]=true;
     D=0;
     for (e=0;e<edges.length;e++){ ed=edges[e]; if(owned[ed.a]&&owned[ed.b]) D+=ed.d; }
-    L=longestPathFromHQ(t);
     H2=hqToHqScore(t);
-    team._d=D; team._l=L; team._c=H2;
-    team.score=D+L+H2;
+    team._d=D; team._l=0; team._c=H2;
+    team.score=D+H2;
   }
 }
 
@@ -412,7 +420,7 @@ function renderHUD() {
     div.style.borderTop='3px solid '+(i===currentTeam?team.color:'transparent');
     nameDiv=document.createElement('div');   nameDiv.className='tname';  nameDiv.style.color=team.color; nameDiv.textContent=team.name+(team.isComputer?' ■CPU':'');
     scoreDiv=document.createElement('div');  scoreDiv.className='tscore'; scoreDiv.style.color=team.color; scoreDiv.textContent=String(team.score);
-    partsDiv=document.createElement('div');  partsDiv.className='tparts'; partsDiv.textContent='E:'+team._d+'  P:'+team._l+'  HQ:'+team._c;
+    partsDiv=document.createElement('div');  partsDiv.className='tparts'; partsDiv.textContent='EDGES: '+team._d+'   HQ LINK: '+team._c;
     stealDiv=document.createElement('div');  stealDiv.className='tsteal'; stealDiv.style.color=team.stealsLeft<=0?'#2a3a4a':team.color;
     if(team.stealsLeft<=0){ stealDiv.textContent='steals gone'; }
     else { var dm=''; for(var sd=0;sd<team.stealsLeft;sd++) dm+='◆'; stealDiv.textContent=dm+' '+team.stealsLeft+' steal'+(team.stealsLeft===1?'':'s')+' ready'; }
@@ -1136,17 +1144,17 @@ document.getElementById('load-confirm-btn').addEventListener('click', function()
 function endGame() {
   var sorted, t, i, c, tr, td, cells;
   calcScores();
-  if(rafId){ cancelAnimationFrame(rafId); rafId=null; }
-  gameEl.style.display='none'; scoreEl.style.display='flex';
+  /* Keep game board visible behind overlay — just stop CPU moves */
+  scoreEl.style.display='flex';
   sorted=teams.slice().sort(function(a,b){ return b.score-a.score; });
   var tbody=document.getElementById('score-rows'); tbody.innerHTML='';
   for(i=0;i<sorted.length;i++){
     t=sorted[i]; tr=document.createElement('tr'); if(i===0) tr.className='winner-row';
-    cells=[(i===0?'\u2605 ':'')+t.name,String(t._d),String(t._l),String(t._c),String(t.score)];
+    cells=[(i===0?'\u2605 ':'')+t.name,String(t._d),String(t._c),String(t.score)];
     for(c=0;c<cells.length;c++){
       td=document.createElement('td'); td.textContent=cells[c];
-      if(c===0||c===4) td.style.color=t.color;
-      if(c===4){ td.style.fontSize='15px'; td.style.fontWeight='700'; }
+      if(c===0||c===3) td.style.color=t.color;
+      if(c===3){ td.style.fontSize='15px'; td.style.fontWeight='700'; }
       tr.appendChild(td);
     }
     tbody.appendChild(tr);
@@ -1170,7 +1178,23 @@ document.getElementById('start-btn').addEventListener('click', function(){
 });
 
 document.getElementById('play-again-btn').addEventListener('click', function(){
-  scoreEl.style.display='none'; setupEl.style.display='flex'; renderInputs();
+  scoreEl.style.display='none';
+  gameEl.style.display='none';
+  setupEl.style.display='flex'; renderInputs();
+});
+
+document.getElementById('score-close-btn').addEventListener('click', function(){
+  scoreEl.style.display='none';
+  /* Show score again button in toolbar */
+  document.getElementById('show-score-btn').style.display='inline-block';
+});
+document.getElementById('score-close-btn2').addEventListener('click', function(){
+  scoreEl.style.display='none';
+  document.getElementById('show-score-btn').style.display='inline-block';
+});
+document.getElementById('show-score-btn').addEventListener('click', function(){
+  scoreEl.style.display='flex';
+  this.style.display='none';
 });
 
 window.addEventListener('resize', function(){
